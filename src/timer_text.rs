@@ -3,7 +3,7 @@ use bevy::{diagnostic::*, prelude::*};
 pub struct TimerText
 {
     pub value : f32,
-    
+
 }
 #[derive(Resource,Default)]
 pub struct Completion
@@ -13,7 +13,7 @@ pub struct Completion
 }
 pub fn text_update_system(
     completion : Res<Completion>,
-    diagnostics: Res<Diagnostics>,
+    diagnostics: Res<DiagnosticsStore>,
     time : Res<Time>,
     mut query: Query<(&mut Text, &mut TimerText)>,
 ) {

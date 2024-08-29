@@ -32,7 +32,7 @@ pub fn update_car_suspension(
     mut transform_query: Query<&mut Transform,Without<CarPhysics>>
 ) {
     if let Ok((mut car_physics, mut force, velocity, car_transform)) = car_query.get_single_mut() {
-        
+
         let f_r_d = car_transform.translation
             + (car_transform.down() * car_physics.car_size.y + car_transform.forward() * car_physics.car_size.z)
             + (car_transform.right() * car_physics.car_size.x);
@@ -60,15 +60,15 @@ pub fn update_car_suspension(
             {
                 let hit = rapier_context.cast_ray_and_get_normal(
                     wheel_vec[i]+car_transform.up()*0.01,
-                    car_transform.down(),
+                    *car_transform.down(),
                     max_suspension,
                     true,
                     QueryFilter::only_fixed(),
                 );
                 if let Some((_entity, ray_intersection)) = hit {
                     car_physics.wheel_infos[i].hit = true;
-                    let compression = 1. - (ray_intersection.toi * car_transform.down().length() / max_suspension);
-                    let suspension_strength = 15000.;
+                    let compression = 1. - (ray_intersection.time_of_impact * car_transform.down().length() / max_suspension);
+                    let suspension_strength = 1500.;
                     let suspension_damping = 1200.;
 
                     let add_force = ExternalForce::at_point(
@@ -92,14 +92,14 @@ pub fn update_car_suspension(
                 else
                 {
                     car_physics.wheel_infos[i].hit = false;
-                    
+
                     wheel_transform.translation = wheel_vec[i]-car_transform.up()*(max_suspension-0.2);
                     if i == 2 || i == 3
                     {
                         wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,car_transform.rotation,car_physics.wheels_stationary_animation_speed*time.delta_seconds());
                     }
-                   
-                    
+
+
                 }
             }
         }

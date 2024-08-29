@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::{car_suspension::CarPhysics, car_camera::CameraFollow, timer_text::Completion};
+use crate::{car_camera::CameraFollow, car_suspension::CarPhysics, timer_text::Completion};
 #[derive(Component)]
 pub struct CarController {
     pub rotated_last_frame: bool,
@@ -10,25 +10,23 @@ pub struct CarController {
     pub center_of_mass_altered: bool,
     pub rotate_to_rotation: Quat,
     pub slerp_speed: f32,
-    pub car_linear_damping : f32,
+    pub car_linear_damping: f32,
 }
 pub fn car_controls(
-    mut completion : ResMut<Completion>,
+    mut completion: ResMut<Completion>,
     mut commands: Commands,
     time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
-    mut car_query: Query<
-        (
-            Entity,
-            &mut Damping,
-            &mut CarController,
-            &mut CarPhysics,
-            &mut ExternalForce,
-            &mut ExternalImpulse,
-            &mut Transform,
-        ),
-    >,
-    mut transform_query: Query<&mut Transform,Without<CarPhysics>>
+    keys: Res<ButtonInput<KeyCode>>,
+    mut car_query: Query<(
+        Entity,
+        &mut Damping,
+        &mut CarController,
+        &mut CarPhysics,
+        &mut ExternalForce,
+        &mut ExternalImpulse,
+        &mut Transform,
+    )>,
+    mut transform_query: Query<&mut Transform, Without<CarPhysics>>,
 ) {
     if let Ok((
         entity,
@@ -55,7 +53,7 @@ pub fn car_controls(
             commands
                 .entity(entity)
                 .insert(AdditionalMassProperties::MassProperties(MassProperties {
-                    mass : 1.,
+                    mass: 1.,
                     local_center_of_mass: Vec3::new(0., -0.5, 0.),
                     ..default()
                 }));
@@ -63,30 +61,27 @@ pub fn car_controls(
             car_controller.center_of_mass_altered = true;
         }
         let mut num_on_ground = 0;
-        for i in 0..car_physics.wheel_infos.len()
-        {
-            if car_physics.wheel_infos[i].hit == true
-            {
-                num_on_ground+=1;
-                
+        for i in 0..car_physics.wheel_infos.len() {
+            if car_physics.wheel_infos[i].hit == true {
+                num_on_ground += 1;
             }
         }
-        if num_on_ground>1 
-        {
+        if num_on_ground > 1 {
             damping.linear_damping = car_controller.car_linear_damping;
-            if keys.pressed(KeyCode::W) {
+            if keys.pressed(KeyCode::KeyW) {
                 completion.started = true;
-                force.force += car_transform.forward() * car_controller.speed * time.delta_seconds();
+                force.force +=
+                    car_transform.forward() * car_controller.speed * time.delta_seconds();
             }
-            if keys.just_pressed(KeyCode::W) {
-                
+            if keys.just_pressed(KeyCode::KeyW) {
                 force.torque += car_transform.left() * 300.;
             }
-            if keys.pressed(KeyCode::S) {
+            if keys.pressed(KeyCode::KeyS) {
                 completion.started = true;
-                force.force -= car_transform.forward() * car_controller.speed * time.delta_seconds();
+                force.force -=
+                    car_transform.forward() * car_controller.speed * time.delta_seconds();
             }
-            if keys.just_pressed(KeyCode::S) {
+            if keys.just_pressed(KeyCode::KeyS) {
                 force.torque -= car_transform.left() * 300.;
             }
             car_controller.rotate_to_rotation = car_transform.rotation;
@@ -96,57 +91,84 @@ pub fn car_controls(
                 car_controller.rotate_to_rotation,
                 car_controller.slerp_speed * time.delta_seconds(),
             );
-            if keys.pressed(KeyCode::A) {
-                force.torque += car_transform.up() * time.delta_seconds() * car_controller.rotate_speed;
+            if keys.pressed(KeyCode::KeyA) {
+                force.torque +=
+                    car_transform.up() * time.delta_seconds() * car_controller.rotate_speed;
             }
-            if keys.pressed(KeyCode::D) {
-                force.torque -= car_transform.up() * time.delta_seconds() * car_controller.rotate_speed;
+            if keys.pressed(KeyCode::KeyD) {
+                force.torque -=
+                    car_transform.up() * time.delta_seconds() * car_controller.rotate_speed;
             }
-        }
-        else {
+        } else {
             damping.linear_damping = 0.;
         }
         let mut one_pressed = false;
-        if keys.pressed(KeyCode::A) {
+        if keys.pressed(KeyCode::KeyA) {
             one_pressed = true;
             let mut fake_transform = car_transform.clone();
             fake_transform.rotate_y(1.);
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[0].entity)
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[0].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,fake_transform.rotation,car_physics.wheels_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    fake_transform.rotation,
+                    car_physics.wheels_animation_speed * time.delta_seconds(),
+                );
             }
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[1].entity)
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[1].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,fake_transform.rotation,car_physics.wheels_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    fake_transform.rotation,
+                    car_physics.wheels_animation_speed * time.delta_seconds(),
+                );
             }
-        }
-        else if keys.pressed(KeyCode::D)
-        {
+        } else if keys.pressed(KeyCode::KeyD) {
             let mut fake_transform = car_transform.clone();
             fake_transform.rotate_y(-1.);
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[0].entity)
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[0].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,fake_transform.rotation,car_physics.wheels_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    fake_transform.rotation,
+                    car_physics.wheels_animation_speed * time.delta_seconds(),
+                );
             }
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[1].entity)
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[1].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,fake_transform.rotation,car_physics.wheels_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    fake_transform.rotation,
+                    car_physics.wheels_animation_speed * time.delta_seconds(),
+                );
             }
-        }
-        else {
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[0].entity)
+        } else {
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[0].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,car_transform.rotation,car_physics.wheels_stationary_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    car_transform.rotation,
+                    car_physics.wheels_stationary_animation_speed * time.delta_seconds(),
+                );
             }
-            if let Ok(mut wheel_transform) = transform_query.get_mut(car_physics.wheel_infos[1].entity)
+            if let Ok(mut wheel_transform) =
+                transform_query.get_mut(car_physics.wheel_infos[1].entity)
             {
-                wheel_transform.rotation = Quat::slerp(wheel_transform.rotation,car_transform.rotation,car_physics.wheels_stationary_animation_speed*time.delta_seconds());
+                wheel_transform.rotation = Quat::slerp(
+                    wheel_transform.rotation,
+                    car_transform.rotation,
+                    car_physics.wheels_stationary_animation_speed * time.delta_seconds(),
+                );
             }
         }
         car_physics.car_transform_camera.translation = car_transform.translation;
-        if Vec3::distance(car_transform.translation,Vec3::new(-850.,118.,364.) )<=100.
-        {
+        if Vec3::distance(car_transform.translation, Vec3::new(-850., 118., 364.)) <= 100. {
             completion.finished = true;
-        }   
+        }
     }
 }
